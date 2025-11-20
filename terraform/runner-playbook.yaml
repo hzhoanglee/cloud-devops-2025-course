@@ -1,0 +1,162 @@
+---
+- name: TerraformCF
+  hosts: all
+  become: yes
+  vars:
+    code_server_version: "4.106.2"
+    code_server_password: "DuEmDaCoGangChoTinhYeuNguQuen"
+    app_port: 3636
+    code_server_port: 8080
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - ufw
+        state: present
+
+    - name: Download code-server
+      get_url:
+        url: "https://github.com/coder/code-server/releases/download/v{{ code_server_version }}/code-server_{{ code_server_version }}_amd64.deb"
+        dest: "/tmp/code-server.deb"
+        mode: '0644'
+
+    - name: Install code-server
+      apt:
+        deb: "/tmp/code-server.deb"
+        state: present
+
+    - name: Create code-server config directory
+      file:
+        path: /root/.config/code-server
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Configure code-server
+      copy:
+        content: |
+          bind-addr: 0.0.0.0:{{ code_server_port }}
+          auth: password
+          password: {{ code_server_password }}
+          cert: false
+        dest: /root/.config/code-server/config.yaml
+        mode: '0600'
+        owner: root
+        group: root
+      notify: restart code-server
+
+    - name: Create code-server systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=Code Server
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          Environment=PASSWORD={{ code_server_password }}
+          ExecStart=/usr/bin/code-server --config /root/.config/code-server/config.yaml
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/code-server.service
+        mode: '0644'
+      notify: restart code-server
+
+    - name: Clone course repository
+      git:
+        repo: https://github.com/hzhoanglee/cloud-devops-2025-course
+        dest: /opt/cloud-devops-2025-course
+        version: main
+        force: yes
+
+    - name: Set permissions for service-automate
+      file:
+        path: /opt/cloud-devops-2025-course/service-automate
+        mode: '0755'
+        state: file
+
+    - name: Create service-automate systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=Service Automate Application
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/opt/cloud-devops-2025-course
+          ExecStart=/opt/cloud-devops-2025-course/service-automate
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/service-automate.service
+        mode: '0644'
+      notify: restart service-automate
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start code-server service
+      systemd:
+        name: code-server
+        enabled: yes
+        state: started
+
+    - name: Enable and start service-automate service
+      systemd:
+        name: service-automate
+        enabled: yes
+        state: started
+
+    - name: Configure UFW - Allow SSH
+      ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Configure UFW - Allow code-server port
+      ufw:
+        rule: allow
+        port: "{{ code_server_port }}"
+        proto: tcp
+
+    - name: Configure UFW - Allow service-automate port
+      ufw:
+        rule: allow
+        port: "{{ app_port }}"
+        proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+  handlers:
+    - name: restart code-server
+      systemd:
+        name: code-server
+        state: restarted
+        daemon_reload: yes
+
+    - name: restart service-automate
+      systemd:
+        name: service-automate
+        state: restarted
+        daemon_reload: yes
