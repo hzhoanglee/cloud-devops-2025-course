@@ -148,6 +148,9 @@
       ufw:
         state: enabled
 
+    - name: Install common.yaml
+      import_playbook: /opt/cloud-devops-2025-course/ansible/common.yaml
+
   handlers:
     - name: restart code-server
       systemd:

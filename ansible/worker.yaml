@@ -1,0 +1,55 @@
+---
+- name: Configure Spark Workers
+  hosts: spark_workers
+  become: yes
+  vars:
+    install_dir: /opt
+    spark_user: spark
+    spark_group: spark
+    spark_master_host: "{{ hostvars[groups['spark_master'][0]]['ansible_host'] }}"
+    spark_master_port: 7077
+
+  tasks:
+    - name: Check if Spark Worker service exists
+      stat:
+        path: /etc/systemd/system/spark-worker.service
+      register: spark_worker_service
+
+    - name: Create systemd service for Spark Worker
+      copy:
+        dest: /etc/systemd/system/spark-worker.service
+        content: |
+          [Unit]
+          Description=Apache Spark Worker
+          After=network.target
+
+          [Service]
+          Type=forking
+          User={{ spark_user }}
+          Group={{ spark_group }}
+          ExecStart={{ install_dir }}/spark/sbin/start-slave.sh spark://{{ spark_master_host }}:{{ spark_master_port }}
+          ExecStop={{ install_dir }}/spark/sbin/stop-slave.sh
+          Restart=on-failure
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+      when: not spark_worker_service.stat.exists
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+      when: not spark_worker_service.stat.exists
+
+    - name: Enable and start Spark Worker service
+      systemd:
+        name: spark-worker
+        enabled: yes
+        state: started
+      when: not spark_worker_service.stat.exists
+
+    - name: Display service status message
+      debug:
+        msg: "Spark Worker service already exists. Skipping creation and start."
+      when: spark_worker_service.stat.exists

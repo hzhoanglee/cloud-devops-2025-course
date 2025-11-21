@@ -1,0 +1,78 @@
+---
+- name: Configure Spark Master
+  hosts: spark_master
+  become: yes
+  vars:
+    install_dir: /opt
+    spark_user: spark
+    spark_group: spark
+
+  tasks:
+    - name: Create workers file
+      copy:
+        dest: "{{ install_dir }}/spark/conf/slaves"
+        content: |
+          {% for host in groups['spark_workers'] %}
+          {{ hostvars[host]['ansible_host'] }}
+          {% endfor %}
+        owner: "{{ spark_user }}"
+        group: "{{ spark_group }}"
+        mode: '0644'
+
+    - name: Create systemd service for Spark Master
+      copy:
+        dest: /etc/systemd/system/spark-master.service
+        content: |
+          [Unit]
+          Description=Apache Spark Master
+          After=network.target
+
+          [Service]
+          Type=forking
+          User={{ spark_user }}
+          Group={{ spark_group }}
+          ExecStart={{ install_dir }}/spark/sbin/start-master.sh
+          ExecStop={{ install_dir }}/spark/sbin/stop-master.sh
+          Restart=on-failure
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Create systemd service for Spark History Server
+      copy:
+        dest: /etc/systemd/system/spark-history.service
+        content: |
+          [Unit]
+          Description=Apache Spark History Server
+          After=network.target
+
+          [Service]
+          Type=forking
+          User={{ spark_user }}
+          Group={{ spark_group }}
+          ExecStart={{ install_dir }}/spark/sbin/start-history-server.sh
+          ExecStop={{ install_dir }}/spark/sbin/stop-history-server.sh
+          Restart=on-failure
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Spark Master service
+      systemd:
+        name: spark-master
+        enabled: yes
+        state: started
+
+    - name: Enable and start Spark History Server
+      systemd:
+        name: spark-history
+        enabled: yes
+        state: started
