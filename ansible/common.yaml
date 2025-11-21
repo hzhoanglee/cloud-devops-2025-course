@@ -1,6 +1,6 @@
 ---
 - name: Deploy Apache Spark Common Components
-  hosts: spark_cluster
+  hosts: all
   become: yes
   vars:
     install_dir: /opt
@@ -14,7 +14,7 @@
     hadoop_url: "https://s3.hn-1.cloud.cmctelecom.vn/fileio/hadoop-2.7.1.tar.gz"
     spark_url: "https://s3.hn-1.cloud.cmctelecom.vn/fileio/spark-2.4.3-bin-hadoop2.7.tgz"
     
-    spark_master_host: "{{ hostvars[groups['spark_master'][0]]['ansible_host'] }}"
+    spark_master_host: "{{ hostvars[groups['spark_master'] | default(['']) | first]['ansible_host'] | default('10.0.1.20') if groups['spark_master'] | default([]) else '10.0.1.20' }}"
     spark_master_port: 7077
     spark_master_webui_port: 8080
     spark_worker_webui_port: 8081
@@ -228,6 +228,17 @@
         owner: "{{ spark_user }}"
         group: "{{ spark_group }}"
         mode: '0755'
+
+    - name: Add Spark environment variables to .bashrc
+      blockinfile:
+        path: "~/.bashrc"
+        block: |
+          export JAVA_HOME=/opt/java-8-openjdk-amd64
+          export HADOOP_HOME=/opt/hadoop-2.7.1
+          export SPARK_HOME=/opt/spark-2.4.3-bin-hadoop2.7
+          export PATH=$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - Spark Environment"
+        create: yes
 
     - name: Configure spark-defaults.conf
       copy:

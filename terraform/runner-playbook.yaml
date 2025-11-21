@@ -148,6 +148,13 @@
       ufw:
         state: enabled
 
+    - name: Download filesample.txt for WordCount
+      get_url:
+        url: https://s3.hn-1.cloud.cmctelecom.vn/fileio/filesample.txt
+        dest: /opt/cloud-devops-2025-course/java/filesample.txt
+        mode: '0644'
+      become: yes
+
   handlers:
     - name: restart code-server
       systemd:
