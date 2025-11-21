@@ -6,7 +6,7 @@
     code_server_version: "4.106.2"
     code_server_password: "DuEmDaCoGangChoTinhYeuNguQuen"
     app_port: 3636
-    code_server_port: 8080
+    code_server_port: 8888
 
   tasks:
     - name: Update apt cache
@@ -22,6 +22,56 @@
           - git
           - ufw
         state: present
+
+    - name: Clone course repository
+      git:
+        repo: https://github.com/hzhoanglee/cloud-devops-2025-course
+        dest: /opt/cloud-devops-2025-course
+        version: main
+        force: yes
+
+    - name: Set permissions for service-automate
+      file:
+        path: /opt/cloud-devops-2025-course/service-automate
+        mode: '0755'
+        state: file
+
+    - name: Create service-automate systemd service
+      copy:
+        content: |
+          [Unit]
+          Description=Service Automate Application
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=root
+          WorkingDirectory=/opt/cloud-devops-2025-course
+          ExecStart=/opt/cloud-devops-2025-course/service-automate
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/service-automate.service
+        mode: '0644'
+      notify: restart service-automate
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start service-automate service
+      systemd:
+        name: service-automate
+        enabled: yes
+        state: started
+
+    - name: Configure UFW - Allow service-automate port
+      ufw:
+        rule: allow
+        port: "{{ app_port }}"
+        proto: tcp
 
     - name: Download code-server
       get_url:
@@ -76,53 +126,9 @@
         mode: '0644'
       notify: restart code-server
 
-    - name: Clone course repository
-      git:
-        repo: https://github.com/hzhoanglee/cloud-devops-2025-course
-        dest: /opt/cloud-devops-2025-course
-        version: main
-        force: yes
-
-    - name: Set permissions for service-automate
-      file:
-        path: /opt/cloud-devops-2025-course/service-automate
-        mode: '0755'
-        state: file
-
-    - name: Create service-automate systemd service
-      copy:
-        content: |
-          [Unit]
-          Description=Service Automate Application
-          After=network.target
-
-          [Service]
-          Type=simple
-          User=root
-          WorkingDirectory=/opt/cloud-devops-2025-course
-          ExecStart=/opt/cloud-devops-2025-course/service-automate
-          Restart=always
-          RestartSec=10
-
-          [Install]
-          WantedBy=multi-user.target
-        dest: /etc/systemd/system/service-automate.service
-        mode: '0644'
-      notify: restart service-automate
-
-    - name: Reload systemd daemon
-      systemd:
-        daemon_reload: yes
-
     - name: Enable and start code-server service
       systemd:
         name: code-server
-        enabled: yes
-        state: started
-
-    - name: Enable and start service-automate service
-      systemd:
-        name: service-automate
         enabled: yes
         state: started
 
@@ -136,12 +142,6 @@
       ufw:
         rule: allow
         port: "{{ code_server_port }}"
-        proto: tcp
-
-    - name: Configure UFW - Allow service-automate port
-      ufw:
-        rule: allow
-        port: "{{ app_port }}"
         proto: tcp
 
     - name: Enable UFW
