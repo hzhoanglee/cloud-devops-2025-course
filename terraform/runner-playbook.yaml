@@ -162,4 +162,4 @@
         daemon_reload: yes
 
 - name: Install common.yaml
-  import_playbook: /opt/cloud-devops-2025-course/ansible/common.yaml
+  import_playbook: /tmp/common.yaml
