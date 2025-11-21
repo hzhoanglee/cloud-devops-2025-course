@@ -1,8 +1,0 @@
-- name: common
-  import_playbook: spark-common.yaml
-
-- name: master
-  import_playbook: spark-master.yaml
-
-- name: worker
-  import_playbook: spark-worker.yaml
