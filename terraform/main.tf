@@ -216,7 +216,7 @@ resource "google_compute_instance" "master" {
 
 # Slave instances (10.0.1.30, 10.0.1.31)
 resource "google_compute_instance" "slave" {
-  count        = 4
+  count        = 2
   name         = "${var.prefix}-slave-${count.index + 1}"
   machine_type = "e2-medium"
   zone         = var.zone

@@ -1,6 +1,6 @@
 project_id = "silent-eye-478010-n6"
-region     = "asia-southeast1"
-zone       = "asia-southeast1-a"
+region     = "asia-northeast1"
+zone       = "asia-northeast1-a"
 prefix     = "cluster"
 
 ssh_public_key_path = "~/.ssh/id_rsa.pub"

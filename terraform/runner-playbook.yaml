@@ -150,7 +150,7 @@
 
     - name: Download filesample.txt for WordCount
       get_url:
-        url: https://s3.hn-1.cloud.cmctelecom.vn/fileio/filesample.txt
+        url: https://storage.googleapis.com/hzsdk/sample.txt
         dest: /opt/cloud-devops-2025-course/java/filesample.txt
         mode: '0644'
       become: yes

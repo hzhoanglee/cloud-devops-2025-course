@@ -10,9 +10,9 @@
     hadoop_version: "hadoop-2.7.1"
     spark_version: "spark-2.4.3-bin-hadoop2.7"
     
-    jdk_url: "https://s3.hn-1.cloud.cmctelecom.vn/fileio/jdk-8u202-linux-x64.tar.gz"
-    hadoop_url: "https://s3.hn-1.cloud.cmctelecom.vn/fileio/hadoop-2.7.1.tar.gz"
-    spark_url: "https://s3.hn-1.cloud.cmctelecom.vn/fileio/spark-2.4.3-bin-hadoop2.7.tgz"
+    jdk_url: "https://storage.googleapis.com/hzsdk/jdk-8u202-linux-x64.tar.gz"
+    hadoop_url: "https://storage.googleapis.com/hzsdk/hadoop-2.7.1.tar.gz"
+    spark_url: "https://storage.googleapis.com/hzsdk/spark-2.4.3-bin-hadoop2.7.tgz"
     
     spark_master_host: "{{ hostvars[groups['spark_master'] | default(['']) | first]['ansible_host'] | default('10.0.1.20') if groups['spark_master'] | default([]) else '10.0.1.20' }}"
     spark_master_port: 7077
